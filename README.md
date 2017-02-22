@@ -4,9 +4,8 @@
 ### 使用方法:
 
 ```go
-1. go get github.com/PuerkitoBio/goquery
-2. 把MOMO_SHARE_LINK改成你的分享链接
-3. go run momo.go
+1. 把uid.txt中的数字改为你的uid
+2. 运行momo.exe
 ```
 
 

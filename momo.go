@@ -7,22 +7,28 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"io/ioutil"
 )
 
 const (
-	//replace this with yours
-	MOMO_SHARE_LINK = "http://www.maimemo.com/share/page/?uid=749481&pid=774"
-
 	PROXY_LIST_URL  = "http://www.xicidaili.com/wt/"
 	USER_AGENT      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
 )
 
 var (
+	MOMO_SHARE_LINK = "http://www.maimemo.com/share/page/?pid=743&uid="
 	mu    sync.Mutex
 	count int
 )
 
 func main() {
+
+	uid, err := ioutil.ReadFile("uid.txt")
+	if err != nil {
+		log.Println(err)
+	}
+	MOMO_SHARE_LINK += string(uid)
+	fmt.Println("your share link: "+MOMO_SHARE_LINK)
 
 	list := getIpList()
 	ch := make(chan string)
