@@ -1,45 +1,47 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
-	"io/ioutil"
+	"time"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 const (
-	PROXY_LIST_URL  = "http://www.xicidaili.com/wt/"
-	USER_AGENT      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+	PROXY_LIST_URL = "http://www.xicidaili.com/wt/"
+	USER_AGENT     = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
 )
 
 var (
-	MOMO_SHARE_LINK = "http://www.maimemo.com/share/page/?pid=743&uid="
-	mu    sync.Mutex
-	count int
+	MOMO_SHARE_LINK string
+	mu              sync.Mutex
+	wd              sync.WaitGroup
+	count           int
 )
 
 func main() {
-
-	uid, err := ioutil.ReadFile("uid.txt")
+	fmt.Print("Enter the share link: ")
+	reader := bufio.NewReader(os.Stdin)
+	text, err := reader.ReadString('\n')
 	if err != nil {
-		log.Println(err)
+		os.Exit(1)
 	}
-	MOMO_SHARE_LINK += string(uid)
-	fmt.Println("your share link: "+MOMO_SHARE_LINK)
+	MOMO_SHARE_LINK = text
+	fmt.Println("your share link: " + MOMO_SHARE_LINK)
 
 	list := getIpList()
-	ch := make(chan string)
 
 	for _, proxy := range list {
-		go visit(proxy, ch)
+		wd.Add(1)
+		go visit(proxy)
 	}
-
-	for count != len(list) {
-		fmt.Println(<-ch)
-	}
+	wd.Wait()
 }
 
 func getIpList() []string {
@@ -75,8 +77,8 @@ func getIpList() []string {
 	return ipList
 }
 
-func visit(proxy string, ch chan string) {
-
+func visit(proxy string) {
+	defer wd.Done()
 	proxyUrl, err := url.Parse("http://" + proxy)
 	if err != nil {
 		log.Println(err)
@@ -84,18 +86,20 @@ func visit(proxy string, ch chan string) {
 	tr := &http.Transport{
 		Proxy: http.ProxyURL(proxyUrl),
 	}
-	client := &http.Client{Transport: tr}
+	timeout := time.Duration(10 * time.Second)
+	client := &http.Client{Transport: tr, Timeout: timeout}
 
 	req, err := http.NewRequest("GET", MOMO_SHARE_LINK, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println("Request error:", err)
+		return
 	}
 	req.Header.Add("User-Agent", USER_AGENT)
 
 	client.Do(req)
-	ch <- fmt.Sprintf("No %d, visited by: %s \n", count, proxy)
 
 	mu.Lock()
+	fmt.Printf("No %d, visited by: %s \n", count, proxy)
 	count++
 	mu.Unlock()
 
