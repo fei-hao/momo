@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"net/http"
@@ -26,12 +25,7 @@ var (
 )
 
 func main() {
-	fmt.Print("Enter the share link: ")
-	reader := bufio.NewReader(os.Stdin)
-	text, err := reader.ReadString('\n')
-	if err != nil {
-		os.Exit(1)
-	}
+	text := os.Args[1]
 	MOMO_SHARE_LINK = text
 	fmt.Println("your share link: " + MOMO_SHARE_LINK)
 
